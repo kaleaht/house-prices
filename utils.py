@@ -208,7 +208,7 @@ def model_information(model, x_test=None, y_test=None, plot_test_data = False, p
         print("\nMean squared error: %.2f" % mean_squared_error(y_test, predictions))
         print("\nMean absolute error: %.2f" % mean_absolute_error(y_test, predictions))
         print('\nVariance score: %.2f' % r2_score(y_test, predictions))
-
+        
         mlppd = np.mean(model.log_predictive_density(x_test, y_test))
         print('\nMLPPD:')
         print(mlppd)
