@@ -205,7 +205,6 @@ def model_information(model, x_test=None, y_test=None, plot_test_data = False, p
      
     if x_test is not None and y_test is not None:
         predictions = model.predict(x_test)[0]
-        print (predictions.shape)
         mean_test_error = np.mean((predictions - y_test)**2)
         print('\nMean squared test error:')
         print(mean_test_error)
