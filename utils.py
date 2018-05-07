@@ -7,6 +7,18 @@ import seaborn as sns
 import pylab as plt
 import matplotlib.patches as patches
 
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+from plotly.offline import iplot, init_notebook_mode, plot
+import plotly.graph_objs as go
+import plotly.offline as offline
+
+init_notebook_mode(connected=True)
+
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+
+
 import GPy
 
 GPy.plotting.change_plotting_library('plotly_offline')
@@ -184,7 +196,7 @@ def pca_plots(data_pca_model, data_pca_embedded, data, labels):
     plt.colorbar()
     
     
-def model_information(model, x_test=None, y_test=None, plot_test_data = False):
+def model_information(model, x_test=None, y_test=None, plot_test_data = False, plot_data=True):
     print(model)
  
     log_marginal_likelihood = model.log_likelihood()
@@ -193,30 +205,92 @@ def model_information(model, x_test=None, y_test=None, plot_test_data = False):
      
     if x_test is not None and y_test is not None:
         predictions = model.predict(x_test)[0]
+        print (predictions.shape)
         mean_test_error = np.mean((predictions - y_test)**2)
         print('\nMean squared test error:')
         print(mean_test_error)
+        
+        print("\nMean absolute test error: %.2f"
+              % mean_absolute_error(y_test, predictions))
 
         mlppd = np.mean(model.log_predictive_density(x_test, y_test))
         print('\nMLPPD:')
         print(mlppd)
- 
-    fig = model.plot()
         
-    if plot_test_data:
-        fig_data = fig[0]['data']
-        test_info = {'type': 'scatter', 
-                     'x': np.squeeze(x_test,1), 
-                     'y': np.squeeze(y_test,1), 
-                     'mode': 'markers', 
-                     'showlegend': True, 
-                     'marker': {'color': 'red', 'colorscale': None}, 
-                     'name': 'Test'}
-        fig_data.append(test_info)
-        fig[0]['data'] = fig_data
-    
-    
-    GPy.plotting.show(fig)
+    if plot_data:
+        fig = model.plot()
+
+        if plot_test_data:
+            fig_data = fig[0]['data']
+            test_info = {'type': 'scatter', 
+                         'x': np.squeeze(x_test,1), 
+                         'y': np.squeeze(y_test,1), 
+                         'mode': 'markers', 
+                         'showlegend': True, 
+                         'marker': {'color': 'red', 'colorscale': None}, 
+                         'name': 'Test'}
+            fig_data.append(test_info)
+            fig[0]['data'] = fig_data
+
+
+        GPy.plotting.show(fig)
+
+def plotLinearData(x_train, y_train, x_test, y_test, orders):
+    for order in range(1,orders+1):
+
+        print("Linear regression fit of order {}".format(order))
+        poly = PolynomialFeatures(order)
+        x_train_poly = poly.fit_transform(x_train)
+        x_test_poly = poly.fit_transform(x_test)
+
+        ln = LinearRegression()
+
+        ln.fit(x_train_poly, y_train)
+
+        y_pred = ln.predict(x_test_poly)
+
+        # For plotting
+        x_plot = np.arange(np.min(x_train),np.max(x_train), 1)
+        y_plot = ln.predict(poly.fit_transform(np.expand_dims(x_plot, 1)))
+
+
+        # The coefficients
+        print('Coefficients: \n', ln.coef_)
+        print("Mean squared error: %.2f"
+              % mean_squared_error(y_test, y_pred))
+        print("Mean absolute error: %.2f"
+              % mean_absolute_error(y_test, y_pred))
+        print('Variance score: %.2f' % r2_score(y_test, y_pred))
+
+        # Plot outputs
+        p1 = go.Scatter(x=x_test.values.flatten(), 
+                        y=y_test.values.flatten(), 
+                        mode='markers',
+                        marker=dict(color='red')
+                       )
+        
+        p2 = go.Scatter(x=x_train.values.flatten(), 
+                        y=y_train.values.flatten(), 
+                        mode='markers',
+                        marker=dict(color='black')
+                       )
+
+        p3 = go.Scatter(x=x_plot, 
+                        y=y_plot,
+                        mode='lines',
+                        line=dict(color='blue', width=3)
+                        )
+
+        layout = go.Layout(xaxis=dict(ticks='', showticklabels=True,
+                                      zeroline=True),
+                           yaxis=dict(ticks='', showticklabels=True,
+                                      zeroline=True),
+                           showlegend=False, hovermode='closest')
+
+        fig = go.Figure(data=[p1, p2, p3], layout=layout)
+
+
+        iplot(fig)
 
     
     
