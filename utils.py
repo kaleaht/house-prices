@@ -7,6 +7,7 @@ import seaborn as sns
 import pylab as plt
 import matplotlib.patches as patches
 
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import GPy
 
 GPy.plotting.change_plotting_library('plotly_offline')
@@ -193,9 +194,9 @@ def model_information(model, x_test=None, y_test=None, plot_test_data = False):
      
     if x_test is not None and y_test is not None:
         predictions = model.predict(x_test)[0]
-        mean_test_error = np.mean((predictions - y_test)**2)
-        print('\nMean squared test error:')
-        print(mean_test_error)
+        print("Mean squared error: %.2f" % mean_squared_error(y_test, predictions))
+        print("Mean absolute error: %.2f" % mean_absolute_error(y_test, predictions))
+        print('Variance score: %.2f' % r2_score(y_test, predictions))
 
         mlppd = np.mean(model.log_predictive_density(x_test, y_test))
         print('\nMLPPD:')
